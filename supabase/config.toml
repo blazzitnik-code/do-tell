@@ -1,0 +1,10 @@
+project_id = "cnqguypcqijdilejniij"
+
+[functions.ingest-form4]
+verify_jwt = false
+
+[functions.ingest-events]
+verify_jwt = false
+
+[functions.ingest-house]
+verify_jwt = false

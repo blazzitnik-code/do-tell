@@ -1,0 +1,13 @@
+# secrets
+.env
+.env.*
+!.env.example
+# build
+node_modules/
+.next/
+.vercel/
+next-env.d.ts
+*.tsbuildinfo
+# local
+supabase/.temp/
+_to_delete/
