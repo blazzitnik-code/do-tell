@@ -34,7 +34,8 @@ Deno.serve(async (req) => {
     const pres = await pages(`conditions[type][]=PRESDOCU&conditions[publication_date][gte]=${since}`);
     const rules = await pages(`conditions[type][]=RULE&conditions[significant]=1&conditions[publication_date][gte]=${since}`);
     // deno-lint-ignore no-explicit-any
-    const routine = /^Continuation of (the )?National Emergency/i;
+    // Drop routine/ceremonial documents; they carry no market signal and create false links.
+    const routine = /^(Continuation of (the )?National Emergency|Delegation of Authority|.*\bCorrection\b)|\b(Day|Week|Month|Anniversary|Remembrance|Observance|Honoring|Death of|Flag|Proclamation on the Occasion)\b/i;
     const rows = [...pres, ...rules].filter((d: any) => !routine.test(d.title)).map((d: any) => {
       const isPres = d.type === "Presidential Document";
       const agency = (d.agencies ?? []).map((a: { name?: string }) => a.name).filter(Boolean).join(", ");
@@ -46,7 +47,7 @@ Deno.serve(async (req) => {
         title: isPres ? d.title : `${agency ? agency + ": " : ""}${d.title}`,
         event_type: isPres ? "executive_order" : "agency_action",
         subtype: isPres ? (d.subtype ?? "Presidential document") : "Final rule",
-        sector: classify(`${d.title} ${d.abstract ?? ""} ${agency}`),
+        sector: isPres ? classify(`${d.title} ${d.abstract ?? ""}`) : classify(d.title), // agency rules: title only (abstracts over-match)
         url: d.html_url,
         scheduled: false,
       };

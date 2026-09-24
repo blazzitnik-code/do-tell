@@ -13,7 +13,7 @@ const SRC={
 };
 const TIERS={1:'Core',2:'Executive',3:'Congress',4:'Adjacent'};
 
-const SECNAME={crypto:'crypto',semis:'semiconductors / AI',defense:'defense',pharma:'pharma',energy:'energy',macro:'rates / macro',media:'media',other:'other'};
+const SECNAME={crypto:'crypto',tech:'tech / AI / chips',semis:'semiconductors / AI',defense:'defense',pharma:'pharma',energy:'energy',macro:'rates / macro',media:'media',other:'other'};
 
 /* ---------- data (Supabase) ---------- */
 let ENT={}, EVENTS=[], EV={}, TRADES=[], HEALTH=[];
@@ -22,7 +22,7 @@ const CH_LABEL={truth_social:'Truth Social',x:'X',tv:'TV interview',press_briefi
 const toTrade=r=>({id:r.id,eid:r.entity_id,src:r.source,a:{t:r.asset_symbol,name:r.asset_name||r.asset_symbol,cls:r.asset_class,sec:r.sector||'other'},
   side:r.side,amt:+r.amount_usd||0,lo:r.amount_low!=null?+r.amount_low:null,hi:r.amount_high!=null?+r.amount_high:null,
   exec:Date.parse(r.executed_at),disc:Date.parse(r.disclosed_at),conf:r.confidence||3,tx:r.tx_hash,om:r.open_market!==false,url:r.filing_url,code:r.tx_code});
-const toEvent=r=>{const t=Date.parse(r.occurred_at);return {id:r.id,t,title:r.title,sec:r.sector,type:r.subtype||TYPE_LABEL[r.event_type]||r.event_type,
+const toEvent=r=>{const t=Date.parse(r.occurred_at);return {id:r.id,t,kind:r.event_type,title:r.title,sec:r.sector,type:r.subtype||TYPE_LABEL[r.event_type]||r.event_type,
   up:!!r.scheduled&&t>Date.now(),pre:r.window_pre_days,post:r.window_post_days,dpre:r.window_pre_days,dpost:r.window_post_days,hl:r.half_life_days||30,url:r.url,st:[]}};
 async function all(build){const out=[];for(let from=0;;from+=1000){const {data,error}=await build().range(from,from+999);if(error)throw error;out.push(...data);if(data.length<1000)break}return out}
 async function loadAll(){
@@ -55,7 +55,7 @@ function link(t){
   if(t.a.cls==='Bond'||t.a.cls==='Other'||!t.om){t.ev=null;t.evd=null;t.pre=false;t.gap=false;return}
   EVENTS.forEach(ev=>{if(ev.sec!==t.a.sec)return;const d=(t.exec-ev.t)/D;if(d<-ev.pre||d>ev.post)return;
     const score=Math.abs(d)+(d<0?0:3);if(!best||score<best.s)best={s:score,ev,d}});
-  t.ev=best?best.ev.id:null;t.evd=best?best.d:null;t.pre=!!best&&best.d<0&&!best.ev.up&&best.ev.sec!=='macro';
+  t.ev=best?best.ev.id:null;t.evd=best?best.d:null;t.pre=!!best&&best.d<0&&!best.ev.up&&best.ev.sec!=='macro'&&best.ev.kind!=='agency_action';
   t.gap=false;if(best&&best.d>=0){const f=firstAfter(best.ev);t.gap=!!f&&t.exec<f.t}
 }
 const relinkAll=()=>TRADES.forEach(link);
@@ -135,7 +135,7 @@ $('reset').onclick=()=>{S=JSON.parse(JSON.stringify(DEF));syncers.forEach(f=>f()
 
 const COLS=[['time','When',''],['entity','Who',''],['asset','Asset',''],['side','Side',''],['size','Size','r'],['src','Source',''],['lag','Filing lag','r'],['event','Nearest policy event',''],['conf','Wallet match','']];
 function renderHead(){
-  $('thead').innerHTML=COLS.map(c=>{const on=S.sort.k===c[0];const lab=c[0]==='time'?(S.timeBy==='exec'?'Executed':'Disclosed'):c[1];
+  $('thead').innerHTML=COLS.filter(c=>SHOWCONF||c[0]!=='conf').map(c=>{const on=S.sort.k===c[0];const lab=c[0]==='time'?(S.timeBy==='exec'?'Executed':'Disclosed'):c[1];
     return '<th class="'+c[2]+'"'+(on?' aria-sort="'+(S.sort.d<0?'descending':'ascending')+'"':'')+'><button type="button" data-k="'+c[0]+'">'+lab+' <span class="ar">'+(on?(S.sort.d<0?'▼':'▲'):'↕')+'</span></button></th>'}).join('');
 }
 $('thead').onclick=e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;
@@ -143,7 +143,9 @@ $('thead').onclick=e=>{const b=e.target.closest('button');if(!b)return;const k=b
 
 /* ---------- render ---------- */
 let freshIds=new Set();
+let SHOWCONF=true;
 function render(){
+  SHOWCONF=TRADES.some(t=>t.src==='onchain');
   save();renderHead();
   const rows=base();
   const f=SORTS[S.sort.k];
@@ -156,12 +158,12 @@ function render(){
   const live24=TRADES.filter(t=>Date.now()-t.disc<D).length;
   const med=median(lags);
   $('kpis').innerHTML=[
-    ['Trades',rows.length.toLocaleString('en-US'),live24+' disclosed in the last 24h'],
-    ['Volume',K(vol),'ranges counted at midpoint'],
-    ['Net flow','<span class="'+(net>=0?'pos':'neg')+'">'+(net>=0?'+':'−')+K(Math.abs(net))+'</span>',net>=0?'more bought than sold':'more sold than bought'],
-    ['Pre-event',rows.length?Math.round(pre.length/rows.length*100)+'%':'—',pre.length+' of '+rows.length+' trades inside a same-sector event’s pre-window'],
-    ['Median filing lag',med==null?'—':Math.round(med)+' days','execution → disclosure']
-  ].map(k=>'<div class="kpi"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
+    ['Trades',rows.length.toLocaleString('en-US'),live24+' disclosed in the last 24h','Number of individual transactions matching the filters. One filing often lists many transactions.'],
+    ['Volume',K(vol),'ranges counted at midpoint','Sum of trade sizes. Congress reports only ranges (e.g. $15K–$50K); each counts at its midpoint, so this is an estimate.'],
+    ['Net flow','<span class="'+(net>=0?'pos':'neg')+'">'+(net>=0?'+':'−')+K(Math.abs(net))+'</span>',net>=0?'more bought than sold':'more sold than bought','Buys minus sells in dollars. Dominated by a few large filers; selling is often taxes, rebalancing or divesting, not a market view.'],
+    ['Pre-event',rows.length?Math.round(pre.length/rows.length*100)+'%':'—',pre.length+' of '+rows.length+' trades inside a same-sector event’s pre-window','Share of trades executed shortly before an unscheduled policy event in the same sector. A timing flag, not evidence of anything.'],
+    ['Median filing lag',med==null?'—':Math.round(med)+' days','execution → disclosure','Typical days between the trade and the day it became public. Congress may take up to 45 days; SEC Form 4 is due in 2 business days.']
+  ].map(k=>'<div class="kpi" title="'+esc(k[3]||'')+'"><div class="l">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>').join('');
   // active pills
   const pills=[];
   if(S.entity)pills.push('<button class="pill-x" data-clear="entity">'+ENT[S.entity].name+' <span>×</span></button>');
@@ -180,7 +182,7 @@ function render(){
     '<td><span class="srcn">'+SRC[t.src].label+'</span>'+freshChip(t)+'</td>'+
     '<td class="r mono">'+lagTxt(t.disc-t.exec)+'</td>'+
     '<td>'+evHtml(t)+'</td>'+
-    '<td>'+confHtml(t)+'</td></tr>'}).join(''):'<tr><td colspan="9"><div class="empty">No trades match these filters. Widen the window or press Reset.</div></td></tr>';
+    (SHOWCONF?'<td>'+confHtml(t)+'</td>':'')+'</tr>'}).join(''):'<tr><td colspan="9"><div class="empty">No trades match these filters. Widen the window or press Reset.</div></td></tr>';
   freshIds.clear();
   $('more').innerHTML=rows.length>S.limit?'<span>'+(rows.length-S.limit)+' more</span><button class="btn" id="showmore">Show 40 more</button>':'<span>End of results</span>';
   const sm=$('showmore');if(sm)sm.onclick=()=>{S.limit+=40;render()};

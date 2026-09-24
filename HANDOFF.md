@@ -30,6 +30,18 @@ Mock + specifikacija (Claude artifact "Do Tell"): https://claude.ai/artifact/Lf8
 - Senate eFD: Akamai vrača 403 z naprave; iz cloud okolja 200. Potrebuje agreement POST + CSRF → naslednji korak.
 - `_to_delete/debug-house` = star testni function (že odstranjen iz Supabase), mapo lahko izbrišeš.
 
+- [x] Dashboard (Next.js, `app/`) na Vercel: https://do-tell-psi.vercel.app — magic link prijava, dostop samo `allowed_users`. Supabase Auth site_url + redirect nastavljena. Repo: github.com/blazzitnik-code/do-tell (push dela B; git lock datotek ne morem brisati).
+- `app/engine.js` je generiran iz mocka s `scripts/build_engine.py` (vir: Claude artifact mock). Popravke delaj neposredno v engine.js.
+
+## Odprto / backlog
+- Realtime websocket je v testu vrnil 500 → preveri pri B (zelena "Live" pika).
+- Sektor "tech" (GOOGL, MSFT, META, AMZN, AAPL …) + mapiranje v `_shared/sectors.ts`.
+- Senate eFD (zagon iz Edge Function, ne z naprave — Akamai 403).
+- On-chain: denarnice (WLFI, $TRUMP, MGX) → Alchemy/Helius webhook + `ingest-onchain`.
+- OGE / White House 278-T PDF-ji (T2).
+- Izjave: Factba.se / Truth Social → `statements` + povezovanje z dogodki.
+- House 2025 backfill (`?year=2025`), cene za reakcijo 1h (CoinGecko).
+
 ## Naslednji koraki
 1. Preveri povezavo do Supabase in SEC iz seje.
 2. (narejeno) Form 4. Dodati še 13D/13G (spremembe deležev) in 8-K za podjetja (kripto zakladnice).
