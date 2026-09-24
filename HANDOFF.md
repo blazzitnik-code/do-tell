@@ -40,7 +40,10 @@ Mock + specifikacija (Claude artifact "Do Tell"): https://claude.ai/artifact/Lf8
 
 ## Odprto / backlog
 - GitHub Action za Senat: preveri, ali GitHub runnerji niso blokirani (prvi zagon). Če so, alternativa: self-hosted ali ročni zagon.
-- Denarnice: $TRUMP (Fight Fight Fight / CIC Digital, Solana → Helius), MGX, Trump Media BTC (Bitcoin — potreben mempool.space vir), American Bitcoin.
+- [x] $TRUMP: Solana denarnica 2RH6rU…FFSK (718M TRUMP = Arkham entiteta Official Trump Meme), Helius Enhanced Tx v `ingest-onchain` (`wallets_v2.sql`).
+- [x] Bitcoin (mempool.space v `ingest-onchain`): Trump Media (4 naslovi, vsota = Arkham 4.261 BTC), American Bitcoin (33whEQ…, 5.096 BTC). `wallets_v3.sql`.
+- MGX: 0x2087…3E36 na BSC (Arkham "MGX: Binance Investment") je v bazi, a BSC zajem še ni narejen.
+- Arkham: vgrajen brskalnik je prijavljen; vsaka nova stran zahteva, da B potrdi Cloudflare preverjanje.
 - Cene za reakcijo 1h po izjavi in P&L.
 - House 2025 backfill (`ingest-house?year=2025`).
 - Realtime websocket (500 v testu) — preveri zeleno "Live" piko.
