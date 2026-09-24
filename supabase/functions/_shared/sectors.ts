@@ -32,3 +32,20 @@ export const TICKER_SECTOR: Record<string, string> = Object.fromEntries([
 export function sectorFor(symbol: string | null, name = ""): string {
   return (symbol && TICKER_SECTOR[symbol.toUpperCase()]) || classify(name) || "other";
 }
+
+// Company / token names as they appear in posts → ticker. Word-bounded, case-insensitive.
+export const NAME_TICKER: [RegExp, string][] = [
+  [/\bboeing\b/i, "BA"], [/\bintel (corp(oration)?|stake|chips?|fabs?)\b/i, "INTC"], [/\bnvidia\b/i, "NVDA"], [/\bapple\b/i, "AAPL"], [/\bmicrosoft\b/i, "MSFT"],
+  [/\b(google|alphabet)\b/i, "GOOGL"], [/\bamazon\b/i, "AMZN"], [/\b(meta platforms|facebook)\b/i, "META"], [/\btesla\b/i, "TSLA"],
+  [/\boracle\b/i, "ORCL"], [/\bpalantir\b/i, "PLTR"], [/\bmicron\b/i, "MU"], [/\b(tsmc|taiwan semiconductor)\b/i, "TSM"], [/\bamd\b/i, "AMD"],
+  [/\bexxon\b/i, "XOM"], [/\bchevron\b/i, "CVX"], [/\blockheed\b/i, "LMT"], [/\braytheon\b/i, "RTX"], [/\bpfizer\b/i, "PFE"],
+  [/\b(eli lilly|lilly)\b/i, "LLY"], [/\bgeneral motors\b/i, "GM"], [/\bford motor\b/i, "F"], [/\bcoinbase\b/i, "COIN"],
+  [/\b(trump media|truth social)\b/i, "DJT"], [/\bbitcoin\b/i, "BTC"], [/\bworld liberty\b/i, "WLFI"], [/\$TRUMP\b/, "TRUMP"],
+];
+// "available on Amazon", book and film plugs are not about the company.
+const PLUG = /\b(book|film|movie|documentary|pre-?order|available (now )?(on|at))\b/i;
+export function tickersIn(text: string): string[] {
+  const out = new Set(NAME_TICKER.filter(([re]) => re.test(text)).map(([, t]) => t));
+  if (PLUG.test(text)) out.delete("AMZN");
+  return [...out];
+}

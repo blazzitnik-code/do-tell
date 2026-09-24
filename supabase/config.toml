@@ -8,3 +8,10 @@ verify_jwt = false
 
 [functions.ingest-house]
 verify_jwt = false
+
+
+[functions.ingest-statements]
+verify_jwt = false
+
+[functions.ingest-onchain]
+verify_jwt = false

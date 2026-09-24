@@ -31,13 +31,15 @@ async function loadAll(){
     all(()=>sb.from('trade_feed').select('id,entity_id,source,asset_symbol,asset_name,asset_class,sector,side,amount_usd,amount_low,amount_high,executed_at,disclosed_at,confidence,tx_hash,open_market,tx_code,filing_url').gte('executed_at',since).order('executed_at',{ascending:false})),
     all(()=>sb.from('entities').select('id,name,role,tier,kind').order('name')),
     all(()=>sb.from('events').select('*').gte('occurred_at',since).not('sector','is',null).order('occurred_at')),
-    all(()=>sb.from('statements').select('*').gte('posted_at',since).order('posted_at')),
-    all(()=>sb.from('event_statement_links').select('event_id,statement_id').order('event_id')),
+    Promise.resolve([]),
+    all(()=>sb.from('event_statement_links').select('event_id,statement_id,statements(*)').order('event_id')),
     sb.from('source_health').select('*').then(r=>r.data||[])
   ]);
   ENT={};en.forEach(e=>ENT[e.id]={...e,wallet:null});
   EVENTS=ev.map(toEvent);EV={};EVENTS.forEach(e=>EV[e.id]=e);
-  const SM={};st.forEach(s=>SM[s.id]={t:Date.parse(s.posted_at),ch:CH_LABEL[s.channel]||s.channel,via:s.source,who:s.speaker||'',q:s.body,ref:s.ref_symbol||'',mv:s.reaction_1h_pct!=null?+s.reaction_1h_pct:null,url:s.url});
+  const VIA={factbase:'Factba.se archive',truth_api:'Truth API',x_api:'X API'};
+  sl.forEach(l=>{if(l.statements)st.push(l.statements)});
+  const SM={};st.forEach(s=>SM[s.id]={t:Date.parse(s.posted_at),ch:CH_LABEL[s.channel]||s.channel,via:VIA[s.source]||s.source,who:s.speaker||'',q:s.body,ref:s.ref_symbol||'',mv:s.reaction_1h_pct!=null?+s.reaction_1h_pct:null,url:s.url});
   sl.forEach(l=>{if(EV[l.event_id]&&SM[l.statement_id])EV[l.event_id].st.push(SM[l.statement_id])});
   EVENTS.forEach(e=>e.st.sort((a,b)=>a.t-b.t));
   TRADES=tr.map(toTrade).filter(t=>ENT[t.eid]);

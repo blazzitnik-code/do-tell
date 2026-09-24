@@ -1,0 +1,19 @@
+name: Ingest Senate PTRs
+on:
+  schedule: [{ cron: "17 * * * *" }]   # hourly
+  workflow_dispatch:
+    inputs:
+      days: { description: "Lookback days", default: "30" }
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm install --no-save --no-audit --no-fund @supabase/supabase-js@2
+      - run: node scripts/ingest-senate.mjs --days=${{ github.event.inputs.days || '30' }} --limit=80
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

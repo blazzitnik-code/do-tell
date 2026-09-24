@@ -33,14 +33,17 @@ Mock + specifikacija (Claude artifact "Do Tell"): https://claude.ai/artifact/Lf8
 - [x] Dashboard (Next.js, `app/`) na Vercel: https://do-tell-psi.vercel.app — magic link prijava, dostop samo `allowed_users`. Supabase Auth site_url + redirect nastavljena. Repo: github.com/blazzitnik-code/do-tell (push dela B; git lock datotek ne morem brisati).
 - `app/engine.js` je generiran iz mocka s `scripts/build_engine.py` (vir: Claude artifact mock). Popravke delaj neposredno v engine.js.
 
+- [x] 2026-09-24: sektor `tech` (čipi + big tech + AI, `semis` združen), `asset_sectors` tabela + trigger (sektor po tickerju za vse vire), filtri ceremonialnih dokumentov, ◆ samo za predsedniške ukrepe/objave (ne agencije, ne makro).
+- [x] Senat: scraping blokira Akamai z oblačnih IP (Supabase, naprava). Rešitev: GitHub Action `.github/workflows/ingest-senate.yml` (vsako uro, `scripts/ingest-senate.mjs`), rabi GitHub secrets SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY. Backfill 365 dni narejen ročno (1822 potez) prek `scripts/load_senate_json.py`.
+- [x] Izjave: `ingest-statements` (Truth Social prek Factba.se API, vsakih 5 min), backfill od 2025-07. Objave, ki omenijo podjetje/žeton (`NAME_TICKER`), postanejo dogodki `social_post` s `symbols` → povezava samo na ta ticker. `link_statements()` (sektor + ≥2 skupni besedi ali ticker), ◇ = poteza po dogodku pred prvo izjavo.
+- [x] On-chain: `ingest-onchain` (Alchemy, Ethereum, vsaki 2 min, ≥$10k, cene CoinGecko), denarnice v `supabase/seed/wallets_v1.sql` (WLFI multisig + deployer, Justin Sun). Stanje bloka v `ingest_state`.
+
 ## Odprto / backlog
-- Realtime websocket je v testu vrnil 500 → preveri pri B (zelena "Live" pika).
-- Sektor "tech" (GOOGL, MSFT, META, AMZN, AAPL …) + mapiranje v `_shared/sectors.ts`.
-- Senate eFD (zagon iz Edge Function, ne z naprave — Akamai 403).
-- On-chain: denarnice (WLFI, $TRUMP, MGX) → Alchemy/Helius webhook + `ingest-onchain`.
-- OGE / White House 278-T PDF-ji (T2).
-- Izjave: Factba.se / Truth Social → `statements` + povezovanje z dogodki.
-- House 2025 backfill (`?year=2025`), cene za reakcijo 1h (CoinGecko).
+- GitHub Action za Senat: preveri, ali GitHub runnerji niso blokirani (prvi zagon). Če so, alternativa: self-hosted ali ročni zagon.
+- Denarnice: $TRUMP (Fight Fight Fight / CIC Digital, Solana → Helius), MGX, Trump Media BTC (Bitcoin — potreben mempool.space vir), American Bitcoin.
+- Cene za reakcijo 1h po izjavi in P&L.
+- House 2025 backfill (`ingest-house?year=2025`).
+- Realtime websocket (500 v testu) — preveri zeleno "Live" piko.
 
 ## Naslednji koraki
 1. Preveri povezavo do Supabase in SEC iz seje.
