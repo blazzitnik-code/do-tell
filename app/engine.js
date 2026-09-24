@@ -62,10 +62,10 @@ function link(t){
 }
 const relinkAll=()=>TRADES.forEach(link);
 /* ---------- state ---------- */
-const DEF={q:'',range:90,timeBy:'exec',tiers:[1,2,3,4],cls:['Crypto','Token','Equity','Option','Fund'],srcs:Object.keys(SRC),side:'all',min:0,conf:0,pre:false,om:false,entity:null,event:null,sort:{k:'time',d:-1},limit:40,lb:'net'};
+const DEF={q:'',range:90,timeBy:'exec',tiers:[1,2,3,4],cls:['Crypto','Token','Equity','Option','Fund'],srcs:Object.keys(SRC),secs:['tech','crypto','defense','energy','pharma','media','macro','other'],side:'all',min:0,conf:0,pre:false,om:false,entity:null,event:null,sort:{k:'time',d:-1},limit:40,lb:'net'};
 let S=JSON.parse(JSON.stringify(DEF));
 try{const saved=JSON.parse(localStorage.getItem('dotell-filters')||'null');if(saved)Object.assign(S,saved,{entity:null,event:null,limit:40})}catch(e){}
-function save(){try{const {q,range,timeBy,tiers,cls,srcs,side,min,conf,pre,om,sort,lb}=S;localStorage.setItem('dotell-filters',JSON.stringify({q,range,timeBy,tiers,cls,srcs,side,min,conf,pre,om,sort,lb}))}catch(e){}}
+function save(){try{const {q,range,timeBy,tiers,cls,srcs,secs,side,min,conf,pre,om,sort,lb}=S;localStorage.setItem('dotell-filters',JSON.stringify({q,range,timeBy,tiers,cls,srcs,secs,side,min,conf,pre,om,sort,lb}))}catch(e){}}
 
 const tkey=t=>S.timeBy==='exec'?t.exec:t.disc;
 
@@ -75,6 +75,7 @@ function base(ignoreEvent){
     const e=ENT[t.eid];
     if(tkey(t)<from)return false;
     if(!S.tiers.includes(e.tier)||!S.cls.includes(t.a.cls)||!S.srcs.includes(t.src))return false;
+    if(S.secs&&!S.secs.includes(SECNAME[t.a.sec]?t.a.sec:'other'))return false;
     if(S.side!=='all'&&t.side!==S.side)return false;
     if(t.amt<S.min)return false;
     if(t.conf<S.conf)return false;
@@ -82,7 +83,7 @@ function base(ignoreEvent){
     if(!S.om&&!t.om)return false;
     if(S.entity&&t.eid!==S.entity)return false;
     if(!ignoreEvent&&S.event&&t.ev!==S.event)return false;
-    if(q&&!(e.name+' '+e.role+' '+t.a.t+' '+t.a.name+' '+SRC[t.src].label).toLowerCase().includes(q))return false;
+    if(q&&!(e.name+' '+e.role+' '+t.a.t+' '+t.a.name+' '+SRC[t.src].label+' '+(SECNAME[t.a.sec]||'')).toLowerCase().includes(q))return false;
     return true;
   });
 }
@@ -114,7 +115,8 @@ const median=a=>{if(!a.length)return null;a=a.slice().sort((x,y)=>x-y);const m=a
 function seg(el,opts,get,set){el.innerHTML=opts.map(o=>'<button type="button" data-v="'+o[0]+'">'+o[1]+'</button>').join('');
   const sync=()=>el.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===String(get()))));
   el.onclick=e=>{const b=e.target.closest('button');if(!b)return;set(b.dataset.v);sync();S.limit=40;render()};sync();return sync}
-function chips(el,opts,arr){el.innerHTML=opts.map(o=>'<button type="button" class="chip" data-v="'+o[0]+'">'+o[1]+'</button>').join('');
+function chips(el,opts,arr){
+  el.ondblclick=e=>{const b=e.target.closest('button');if(!b)return;const v=isNaN(+b.dataset.v)?b.dataset.v:+b.dataset.v;S[arr]=[v];el.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.v===b.dataset.v)));S.limit=40;render()};el.innerHTML=opts.map(o=>'<button type="button" class="chip" data-v="'+o[0]+'">'+o[1]+'</button>').join('');
   const sync=()=>el.querySelectorAll('button').forEach(b=>{const v=isNaN(+b.dataset.v)?b.dataset.v:+b.dataset.v;b.setAttribute('aria-pressed',String(S[arr].includes(v)))});
   el.onclick=e=>{const b=e.target.closest('button');if(!b)return;const v=isNaN(+b.dataset.v)?b.dataset.v:+b.dataset.v;const a=S[arr];
     const i=a.indexOf(v);if(i>=0){if(a.length>1)a.splice(i,1)}else a.push(v);sync();S.limit=40;render()};sync();return sync}
@@ -124,6 +126,7 @@ syncers.push(seg($('f-timeby'),[['exec','Executed'],['disc','Disclosed']],()=>S.
 syncers.push(seg($('f-side'),[['all','All'],['buy','Buy'],['sell','Sell'],['transfer','Transfer']],()=>S.side,v=>S.side=v));
 syncers.push(seg($('lb-sort'),[['net','Net flow'],['n','Trades'],['pre','Pre-event']],()=>S.lb,v=>S.lb=v));
 syncers.push(chips($('f-tier'),[[1,'T1 Core'],[2,'T2 Exec'],[3,'T3 Congress'],[4,'T4 Adjacent']],'tiers'));
+syncers.push(chips($('f-sec'),[['tech','Tech / AI'],['crypto','Crypto'],['defense','Defense'],['energy','Energy'],['pharma','Pharma'],['media','Media'],['macro','Macro'],['other','Other']],'secs'));
 syncers.push(chips($('f-cls'),[['Crypto','Crypto'],['Token','Tokens'],['Equity','Stocks'],['Option','Options'],['Fund','Funds'],['Bond','Bonds'],['Other','Other']],'cls'));
 syncers.push(chips($('f-src'),Object.keys(SRC).map(k=>[k,SRC[k].label]),'srcs'));
 const syncInputs=()=>{$('q').value=S.q;$('f-min').value=String(S.min);$('f-conf').value=String(S.conf);$('f-pre').checked=S.pre;$('f-om').checked=!!S.om};
